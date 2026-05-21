@@ -27,6 +27,11 @@ def init_db():
             tests_json TEXT NOT NULL
         )
     """)
+    # Ensure the availability column exists for older DBs
+    cursor.execute("PRAGMA table_info(runs)")
+    cols = [row["name"] for row in cursor.fetchall()]
+    if "availability" not in cols:
+        cursor.execute("ALTER TABLE runs ADD COLUMN availability REAL NOT NULL DEFAULT 0")
     conn.commit()
     conn.close()
 
