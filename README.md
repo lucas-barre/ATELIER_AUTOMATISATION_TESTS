@@ -52,7 +52,7 @@ Pour cet atelier, **vous avez 4 secrets à créer** dans votre Repository GitHUB
 
 Notions acquises de cette séquence :  
 Vous avez vu dans cette séquence comment créer des secrets GiHUB afin de mettre en place de l'industrialisation continue.   
-  
+
 ---------------------------------------------------
 🔹 Séquence 4 : Atelier
 ---------------------------------------------------
