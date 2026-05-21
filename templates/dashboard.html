@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QoS API Dashboard - Frankfurter</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --card-bg: rgba(17, 25, 40, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.1);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.1);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-heading: #ffffff;
+            --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --glass-blur: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 1250px;
+            margin: 0 auto;
+        }
+
+        /* Header Style */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .logo-section h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-heading);
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-section p {
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+            font-size: 0.95rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 14px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            background-color: #4f46e5;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-color);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-heading);
+            transform: translateY(-2px);
+        }
+
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Metrics grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .metric-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .metric-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .metric-icon.primary {
+            background: var(--primary-glow);
+            color: #818cf8;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .metric-icon.success {
+            background: var(--success-glow);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .metric-icon.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .metric-icon.danger {
+            background: var(--danger-glow);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .metric-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.15rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-heading);
+        }
+
+        /* Two columns layout */
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            color: var(--text-heading);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Tests results listing */
+        .test-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .test-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .test-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateX(4px);
+        }
+
+        .test-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .test-name {
+            font-weight: 600;
+            color: var(--text-heading);
+            font-size: 0.95rem;
+        }
+
+        .test-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .test-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .test-badge.pass {
+            background-color: var(--success-glow);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .test-badge.fail {
+            background-color: var(--danger-glow);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .latency-tag {
+            font-family: monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+        }
+
+        /* History Table */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        .history-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .history-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .history-item.active {
+            background: rgba(99, 102, 241, 0.08);
+            border-color: var(--primary);
+        }
+
+        .history-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .history-summary {
+            font-weight: 600;
+            color: var(--text-heading);
+            font-size: 0.9rem;
+        }
+
+        .history-qos {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .history-latency {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        /* Loader Overlay for trigger run */
+        .loader-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(9, 13, 22, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(99, 102, 241, 0.1);
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* Health block */
+        .health-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 30px;
+            color: #34d399;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .health-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loader-overlay" id="loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">EXÉCUTION DU RUN DE TESTS AUTOMATISÉS...</div>
+    </div>
+
+    <div class="container">
+        
+        <!-- Header -->
+        <header>
+            <div class="logo-section">
+                <h1><i class="fa-solid fa-gauge-high"></i> Monitoring QoS & Contrat API</h1>
+                <p>Automatisation des tests pour l'API publique <strong>Frankfurter</strong></p>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="/health" class="health-indicator">
+                    <span class="health-dot"></span>
+                    <span>Solution Healthy</span>
+                </a>
+                <button class="btn btn-secondary" onclick="exportData()"><i class="fa-solid fa-download"></i> Exporter JSON</button>
+                <button class="btn btn-primary" onclick="triggerRun()"><i class="fa-solid fa-play"></i> Lancer le Run</button>
+            </div>
+        </header>
+
+        {% if not latest_run %}
+        <!-- Empty State -->
+        <div class="glass-card" style="text-align: center; padding: 4rem 2rem;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 3.5rem; color: var(--warning); margin-bottom: 1.5rem;"></i>
+            <h2 style="margin-bottom: 0.5rem; color: #fff;">Aucun run de test enregistré</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">Le monitoring n'a pas encore été initialisé ou aucune exécution n'a eu lieu.</p>
+            <button class="btn btn-primary" onclick="triggerRun()"><i class="fa-solid fa-play"></i> Déclencher le Premier Run</button>
+        </div>
+        {% else %}
+
+        <!-- Metrics Row -->
+        <div class="metrics-grid">
+            <div class="glass-card metric-card" style="margin-bottom:0;">
+                <div class="metric-icon success">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Disponibilité Run</span>
+                    <span class="metric-value">{{ "%.1f" | format(latest_run.summary.availability * 100) }}%</span>
+                </div>
+            </div>
+
+            <div class="glass-card metric-card" style="margin-bottom:0;">
+                <div class="metric-icon primary">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Latence Moyenne</span>
+                    <span class="metric-value">{{ "%.0f" | format(latest_run.summary.latency_ms_avg) }} ms</span>
+                </div>
+            </div>
+
+            <div class="glass-card metric-card" style="margin-bottom:0;">
+                <div class="metric-icon warning">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Latence p95</span>
+                    <span class="metric-value">{{ "%.0f" | format(latest_run.summary.latency_ms_p95) }} ms</span>
+                </div>
+            </div>
+
+            <div class="glass-card metric-card" style="margin-bottom:0;">
+                <div class="metric-icon {% if latest_run.summary.failed > 0 %}danger{% else %}success{% endif %}">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Tests Réussis</span>
+                    <span class="metric-value">{{ latest_run.summary.passed }}/{{ latest_run.summary.total }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latency and Failure Chart -->
+        <div class="glass-card">
+            <div class="section-title"><i class="fa-solid fa-chart-area"></i> Tendance QoS (Latence & Erreurs)</div>
+            <div style="height: 250px; position: relative;">
+                <canvas id="qosChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Content -->
+        <div class="dashboard-content">
+            
+            <!-- Left: Current run detailed tests -->
+            <div class="glass-card">
+                <div class="section-title" id="details-title">
+                    <i class="fa-solid fa-circle-info"></i> Détails du Dernier Run <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 0.5rem; font-weight: normal;">({{ latest_run.timestamp }})</span>
+                </div>
+                
+                <div class="test-list" id="test-list-container">
+                    {% for test in latest_run.tests %}
+                    <div class="test-item">
+                        <div class="test-meta">
+                            <span class="test-name">{{ test.name }}</span>
+                            <span class="test-desc">{{ test.details }}</span>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <span class="latency-tag"><i class="fa-regular fa-clock"></i> {{ "%.1f" | format(test.latency_ms) }}ms</span>
+                            <span class="test-badge {% if test.status == 'PASS' %}pass{% else %}fail{% endif %}" style="margin-left: 0.75rem;">
+                                {% if test.status == 'PASS' %}
+                                <i class="fa-solid fa-check"></i> PASS
+                                {% else %}
+                                <i class="fa-solid fa-xmark"></i> FAIL
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Right: Runs history -->
+            <div class="glass-card">
+                <div class="section-title"><i class="fa-solid fa-history"></i> Historique des exécutions</div>
+                <div class="history-list">
+                    {% for run in runs %}
+                    <div class="history-item {% if run.id == latest_run.id %}active{% endif %}" onclick="selectRun({{ run | tojson | forceescape }}, this)">
+                        <div>
+                            <div class="history-time"><i class="fa-regular fa-calendar"></i> <span class="format-date" data-iso="{{ run.timestamp }}"></span></div>
+                            <div class="history-summary">
+                                Run #{{ run.id }} &bull; 
+                                <span style="color: {% if run.summary.failed > 0 %}var(--danger){% else %}var(--success){% endif %}">
+                                    {{ run.summary.passed }}/{{ run.summary.total }} Ok
+                                </span>
+                            </div>
+                        </div>
+                        <div class="history-qos">
+                            <span class="test-badge {% if run.summary.failed == 0 %}pass{% else %}fail{% endif %}">
+                                {{ "%.0f" | format(run.summary.availability * 100) }}%
+                            </span>
+                            <span class="history-latency">Avg: {{ "%.0f" | format(run.summary.latency_ms_avg) }}ms</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+    <script>
+        // Trigger Test Run asynchronously
+        function triggerRun() {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'flex';
+            
+            fetch('/run', { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        // Reload page to reflect new run
+                        window.location.reload();
+                    } else {
+                        alert('Une erreur est survenue lors de l\'exécution du run.');
+                        loader.style.display = 'none';
+                    }
+                })
+                .catch(err => {
+                    alert('Erreur réseau.');
+                    loader.style.display = 'none';
+                });
+        }
+
+        // Export current run data as JSON
+        function exportData() {
+            window.open('/run', '_blank');
+        }
+
+        // Interactive history run selection
+        function selectRun(run, element) {
+            // Update active state in list
+            document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+
+            // Format date for title
+            const dateStr = formatDate(run.timestamp);
+            document.getElementById('details-title').innerHTML = `
+                <i class="fa-solid fa-circle-info"></i> Détails du Run #${run.id} 
+                <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 0.5rem; font-weight: normal;">(${dateStr})</span>
+            `;
+
+            // Populate test details
+            const container = document.getElementById('test-list-container');
+            container.innerHTML = '';
+            
+            run.tests.forEach(test => {
+                const badgeClass = test.status === 'PASS' ? 'pass' : 'fail';
+                const badgeIcon = test.status === 'PASS' ? 'fa-check' : 'fa-xmark';
+                
+                const item = document.createElement('div');
+                item.className = 'test-item';
+                item.innerHTML = `
+                    <div class="test-meta">
+                        <span class="test-name">${test.name}</span>
+                        <span class="test-desc">${test.details || ''}</span>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="latency-tag"><i class="fa-regular fa-clock"></i> ${test.latency_ms.toFixed(1)}ms</span>
+                        <span class="test-badge ${badgeClass}" style="margin-left: 0.75rem;">
+                            <i class="fa-solid ${badgeIcon}"></i> ${test.status}
+                        </span>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Helper to format ISO date to human readable French format
+        function formatDate(isoString) {
+            try {
+                const d = new Date(isoString);
+                return d.toLocaleString('fr-FR', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch(e) {
+                return isoString;
+            }
+        }
+
+        // Format dates on load
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll('.format-date').forEach(el => {
+                const iso = el.getAttribute('data-iso');
+                el.innerText = formatDate(iso);
+            });
+
+            {% if runs %}
+            // Render Trend Chart using data from history
+            // We reverse the array to show chronological progression (left to right)
+            const runsData = {{ runs | tojson }};
+            const reversedRuns = [...runsData].reverse();
+            
+            const labels = reversedRuns.map(r => `Run #${r.id}`);
+            const avgLatencies = reversedRuns.map(r => r.summary.latency_ms_avg);
+            const p95Latencies = reversedRuns.map(r => r.summary.latency_ms_p95);
+            const errorRates = reversedRuns.map(r => r.summary.error_rate * 100);
+
+            const ctx = document.getElementById('qosChart').getContext('2d');
+            
+            Chart.defaults.color = '#9ca3af';
+            Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Latence Moyenne (ms)',
+                            data: avgLatencies,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 2,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Latence p95 (ms)',
+                            data: p95Latencies,
+                            borderColor: '#fbbf24',
+                            backgroundColor: 'rgba(251, 191, 36, 0.02)',
+                            fill: false,
+                            tension: 0.3,
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Taux d\'erreur (%)',
+                            data: errorRates,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: false,
+                            tension: 0.3,
+                            borderWidth: 2,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(9, 13, 22, 0.95)',
+                            titleColor: '#fff',
+                            bodyColor: '#e5e7eb',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 10
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Latence (ms)'
+                            },
+                            grid: {
+                                color: 'rgba(255,255,255,0.04)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Taux d\'erreur (%)'
+                            },
+                            min: 0,
+                            max: 100,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

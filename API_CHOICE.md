@@ -1,13 +1,31 @@
 # API Choice
 
-- Étudiant :
-- API choisie :
-- URL base :
-- Documentation officielle / README :
-- Auth : None / API Key / OAuth
+- Étudiant : lucato
+- API choisie : Frankfurter
+- URL base : https://api.frankfurter.app
+- Documentation officielle / README : https://www.frankfurter.app/docs/
+- Auth : None
 - Endpoints testés :
-  - GET ...
-  - GET ...
+  - `GET /latest` : Récupère les taux de change les plus récents par rapport à l'EUR.
+  - `GET /latest?from=USD` : Récupère les taux les plus récents avec le USD comme devise de base.
+  - `GET /latest?from=USD&to=EUR,GBP` : Récupère les taux filtrés pour EUR et GBP avec USD en base.
+  - `GET /<date>` (ex. `/2020-01-01`) : Récupère les taux pour une date historique donnée.
+  - `GET /currencies` : Récupère la liste complète des devises supportées.
+  - `GET /latest?from=INVALID` (cas d'erreur) : Vérifie le comportement avec une devise invalide.
+  - `GET /invalid_endpoint` (cas d'erreur) : Vérifie le comportement sur une route inexistante.
 - Hypothèses de contrat (champs attendus, types, codes) :
+  - **Success (HTTP 200 OK)** : Le header `Content-Type` doit contenir `application/json`.
+  - **Structure JSON** :
+    - `amount` : type float/int (généralement 1.0)
+    - `base` : type string (code de devise ISO, ex. "EUR")
+    - `date` : type string au format YYYY-MM-DD (ex. "2020-01-02")
+    - `rates` : type object (dictionnaire clé/valeur où les clés sont des strings ISO et les valeurs des floats)
+  - **Structure de la liste des devises** : Un simple dictionnaire avec clé `code` (string) et valeur `nom complet` (string).
+  - **Errors (HTTP 404 Not Found)** :
+    - Retourne HTTP 404 pour les devises inconnues ou endpoints inexistants, avec un dictionnaire JSON `{"message": "not found"}`.
 - Limites / rate limiting connu :
+  - Pas de clés d'API requises, pas de limites strictes spécifiées publiquement mais il convient d'être respectueux (éviter de dépasser 20 requêtes par run et cadencer les appels).
 - Risques (instabilité, downtime, CORS, etc.) :
+  - Possibilité de latence réseau accrue.
+  - Risque d'indisponibilité momentanée du service (downtime).
+  - Le service résout parfois la date demandée à la date disponible la plus proche en cas de jour férié ou week-end.
