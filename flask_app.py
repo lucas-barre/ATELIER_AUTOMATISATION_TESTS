@@ -25,7 +25,7 @@ def consignes():
 @app.route("/dashboard")
 def dashboard():
     runs = list_runs(limit=50)
-    latest_run = runs[0] if runs else None
+    latest_run = runs[0] if runs else {"summary": {"availability": 0, "passed": 0, "failed": 0, "error_rate": 0, "latency_ms_avg": 0, "latency_ms_p95": 0}}
     return render_template("dashboard.html", latest_run=latest_run, runs=runs)
 
 @app.route("/run", methods=["GET", "POST"])

@@ -21,6 +21,7 @@ def init_db():
             passed INTEGER NOT NULL,
             failed INTEGER NOT NULL,
             error_rate REAL NOT NULL,
+            availability REAL NOT NULL,
             latency_ms_avg REAL NOT NULL,
             latency_ms_p95 REAL NOT NULL,
             tests_json TEXT NOT NULL
@@ -34,14 +35,15 @@ def save_run(run_data):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO runs (timestamp, api, passed, failed, error_rate, latency_ms_avg, latency_ms_p95, tests_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO runs (timestamp, api, passed, failed, error_rate, availability, latency_ms_avg, latency_ms_p95, tests_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         run_data["timestamp"],
         run_data["api"],
         run_data["summary"]["passed"],
         run_data["summary"]["failed"],
         run_data["summary"]["error_rate"],
+        run_data["summary"].get("availability", 0),
         run_data["summary"]["latency_ms_avg"],
         run_data["summary"]["latency_ms_p95"],
         json.dumps(run_data["tests"])
@@ -69,6 +71,7 @@ def list_runs(limit=50):
                 "passed": r["passed"],
                 "failed": r["failed"],
                 "error_rate": r["error_rate"],
+                "availability": r["availability"],
                 "latency_ms_avg": r["latency_ms_avg"],
                 "latency_ms_p95": r["latency_ms_p95"]
             },
